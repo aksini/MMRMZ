@@ -6,9 +6,10 @@ import numpy as np
 N = 1000
 
 
-def draw(arrs, dir_name, name):
+def draw(arrs, lines_label, dir_name, name):
     plt.figure()
-    plt.plot(*arrs)
+    lines = plt.plot(*arrs)
+    plt.legend(lines, lines_label)
     plt.savefig(f'Lab_1/{dir_name}/{name}.png')
 
 
@@ -40,32 +41,26 @@ def main_func(call):
     args = selected.get('args')
     name = selected.get('name')
     arr = []
-    for _ in range(N):
+    for _ in range(N+1):
         arr.append(func(*args))
     return arr, name
 
 
-def math_exp(arr, name):
-    sum_ = 0
+def math_exp(arr):
     m_exp = []
-    count = []
-    for i, item in enumerate(arr):
-        sum_ += item
-        m_exp.append(sum_ / N)
-        count.append(i + 1)
-    draw([count, m_exp], name, 'math_exp')
+    for i in range(1, len(arr)+1):
+        m_exp.append(np.mean(arr[:i]))
     return m_exp
 
 
-def dispersion(arr, exp_arr, name):
-    sum_ = 0
+def dispersion(arr, exp_arr):
     disp = []
-    count = []
-    for i, item in enumerate(arr):
-        sum_ += math.pow(item - exp_arr[i], 2)
-        disp.append(sum_ * 1 / (N - 1))
-        count.append(i + 1)
-    draw([count, disp], name, 'dispersion')
+    for i in range(1, len(arr)+1):
+        try:
+            d = sum([(item - exp_arr[i]) ** 2 for item in arr[:i]])
+        except IndexError:
+            continue
+        disp.append(d / i)
     return disp
 
 
@@ -75,13 +70,20 @@ def error(arr_exp, arr_disp, name):
     Dt = (1 / (L * L))
     error_exp = []
     error_disp = []
-    count = []
-
-    for i, item in enumerate(arr_exp):
-        error_exp.append(abs(item - Mt))
-        error_disp.append(abs(arr_disp[i] - Dt))
-        count.append(i + 1)
-    draw([count, error_disp, count, error_exp], name, 'error')
+    for exp, disp in zip(arr_exp, arr_disp):
+        error_exp.append(abs(exp - Mt))
+        error_disp.append(abs(disp - Dt))
+    draw([range(len(arr_exp)), arr_exp, range(len(arr_disp)), arr_disp],
+         ['mathematical expectation', 'dispersion'],
+         name,
+         'mathematical expectation and dispersion'
+         )
+    draw(
+        [range(len(error_disp)), error_disp, range(len(error_exp)), error_exp],
+        ['errors dispersions', 'errors mathematical expectation'],
+        name,
+        'errors of mathematical expectation and dispersion'
+    )
 
 
 def my_min(arr):
@@ -133,8 +135,8 @@ if __name__ == '__main__':
         '   3) Нормальмальное \n'
     )
     array_exp, name_file = main_func(select)
-    exp_math = math_exp(array_exp, name_file)
-    exp_disp = dispersion(array_exp, exp_math, name_file)
+    exp_math = math_exp(array_exp)
+    exp_disp = dispersion(array_exp, exp_math)
     distribution(array_exp, name_file)
     error(exp_math, exp_disp, name_file)
     for i in [10, 20, 50, 100, 1000]:
